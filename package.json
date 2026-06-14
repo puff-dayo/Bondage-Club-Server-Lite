@@ -1,0 +1,30 @@
+{
+  "name": "bondage-club-server-lite",
+  "version": "1.0.0",
+  "author": "puff-dayo",
+  "engines": {
+    "node": "24.x"
+  },
+  "repository": "https://github.com/puff-dayo/Bondage-Club-Server-Lite",
+  "main": "app.js",
+  "private": true,
+  "scripts": {
+    "start": "node --unhandled-rejections=throw app.js",
+    "nw": "nw nwjs/",
+    "build": "node build.js",
+    "check": "tsc -p jsconfig.json"
+  },
+  "dependencies": {
+    "base64id": "^2.0.0",
+    "bcryptjs": "^3.0.3",
+    "js-yaml": "^4.1.0",
+    "nodemailer": "^8.0.5",
+    "socket.io": "^4.8.0",
+    "sql.js": "^1.11.0"
+  },
+  "devDependencies": {
+    "nw-builder": "^4.17.11",
+    "socket.io-client": "^4.8.3",
+    "typescript": "^5.3.3"
+  }
+}

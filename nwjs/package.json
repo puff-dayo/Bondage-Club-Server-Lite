@@ -1,0 +1,14 @@
+{
+  "name": "bcserver",
+  "main": "index.html",
+  "node-integration": "browser",
+  "chromium-args": "--no-sandbox",
+  "window": {
+    "title": "BC-Server-Lite",
+    "width": 480,
+    "height": 800,
+    "min_width": 300,
+    "min_height": 300,
+    "resizable": true
+  }
+}

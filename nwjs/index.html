@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BC Server Lite</title>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>BC Server Lite</h1>
+    <span id="status-badge" class="badge badge-stopped">Stopped</span>
+  </header>
+
+  <main>
+    <section id="config-panel" class="panel">
+      <h2>Server Configuration</h2>
+      <div class="form-row">
+        <label for="port">Port:</label>
+        <input type="number" id="port" value="4288" min="1" max="65535">
+      </div>
+      <div class="form-row">
+        <label for="bind-address">Bind Address:</label>
+        <input type="text" id="bind-address" value="127.0.0.1">
+      </div>
+      <div class="form-row">
+        <label for="data-dir">Data Directory:</label>
+        <input type="text" id="data-dir" value="./data" readonly>
+      </div>
+      <div class="form-row">
+        <button id="save-config" class="btn btn-secondary">Save Configuration</button>
+      </div>
+    </section>
+
+    <section id="control-panel" class="panel">
+      <h2>Server Controls</h2>
+      <div class="btn-group">
+        <button id="start-btn" class="btn btn-primary">Start</button>
+        <button id="stop-btn" class="btn btn-danger" disabled>Stop</button>
+        <button id="restart-btn" class="btn btn-secondary" disabled>Restart</button>
+      </div>
+    </section>
+
+    <section id="db-panel" class="panel">
+      <h2>Database Status</h2>
+      <div id="db-stats" class="stats-grid">
+        <div class="stat">
+          <span class="stat-label">Account Count</span>
+          <span id="db-account-count" class="stat-value">-</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Database Size</span>
+          <span id="db-size" class="stat-value">-</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Last Refreshed</span>
+          <span id="db-refresh-time" class="stat-value">-</span>
+        </div>
+      </div>
+      <button id="refresh-db-btn" class="btn btn-secondary">Refresh Database Info</button>
+    </section>
+
+    <section id="log-panel" class="panel">
+      <h2>Server Logs</h2>
+      <div class="log-toolbar">
+        <button id="clear-log-btn" class="btn btn-secondary">Clear Log</button>
+        <label><input type="checkbox" id="auto-scroll" checked> Auto-scroll</label>
+      </div>
+      <pre id="log-output">Waiting for server to start...</pre>
+    </section>
+  </main>
+
+  <footer>
+    <span>BC Server Lite v1.0.0</span>
+    <span id="server-info">Server not running</span>
+  </footer>
+</div>
+<script>
+var _path = require('path');
+var _fs = require('fs');
+var _cwd = process.cwd();
+var _logFile = _path.join(_cwd, 'nwjs-debug.log');
+function _debugLog(msg) { try { _fs.appendFileSync(_logFile, new Date().toISOString() + ' ' + msg + '\n'); } catch(_){} }
+window.onerror = function(msg, src, line, col, err) {
+  _debugLog('ERROR: ' + msg + ' at ' + src + ':' + line);
+};
+// Determine project root: look for config.yaml in CWD or its parent
+try {
+  var _dirs = [_cwd, _path.resolve(_cwd, '..')];
+  var _pkgDir = _path.join(_cwd, 'package.nw');
+  if (_fs.existsSync(_pkgDir)) _dirs.push(_pkgDir);
+  var _found = false;
+  for (var _i = 0; _i < _dirs.length; _i++) {
+    if (_fs.existsSync(_path.join(_dirs[_i], 'config.yaml'))) {
+      window.PROJECT_ROOT = _dirs[_i];
+      _found = true;
+      break;
+    }
+  }
+  if (!_found) {
+    window.PROJECT_ROOT = _cwd;
+    _debugLog('WARN: config.yaml not found at ' + _cwd + ', parent, or package.nw');
+  }
+  _debugLog('PROJECT_ROOT=' + window.PROJECT_ROOT);
+} catch(e) {
+  window.PROJECT_ROOT = _cwd;
+  _debugLog('init error: ' + e.message);
+}
+</script>
+<script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+node_modules
+log.txt
+restart.bat
+.idea
+.env
+*.log
+data/
+config.yaml
+cache/
+dist/
+build-tmp/
+upx_cache/
+package-lock.json
+*.bat
