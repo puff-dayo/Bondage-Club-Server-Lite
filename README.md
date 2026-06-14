@@ -23,3 +23,7 @@ Output will be in `dist/`:
 - `BC-Server-Lite-win-x64-{version}.zip`, the distributable archive
 
 Requires: Node.js, optional upx.
+
+### Screenshot
+
+<img width="500" height="auto" alt="Image" src="https://github.com/user-attachments/assets/da1b5618-0f7c-4fc6-91a8-6e9761804d65" />
