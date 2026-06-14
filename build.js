@@ -94,7 +94,7 @@ function stripLocales(appDir) {
       removed++;
     }
   }
-  console.log(`  Removed ${removed} locale files (kept zh-CN + en-US)`);
+  console.log(`  Removed ${removed} locale files.`);
 }
 
 
