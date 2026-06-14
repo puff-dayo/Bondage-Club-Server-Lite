@@ -1,0 +1,150 @@
+name: Manual release MSW
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, blank = v<package.json version>"
+        required: false
+        type: string
+      draft:
+        description: "Create as draft release"
+        required: true
+        default: false
+        type: boolean
+      prerelease:
+        description: "Mark as prerelease"
+        required: true
+        default: false
+        type: boolean
+      use_upx_cache:
+        description: "Restore/save UPX-compressed binary cache"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          if (Test-Path package-lock.json) {
+            npm ci
+          } else {
+            npm install
+          }
+
+      - name: Install UPX
+        shell: pwsh
+        run: |
+          choco install upx -y --no-progress
+          upx --version
+
+      - name: Restore UPX cache
+        if: ${{ inputs.use_upx_cache }}
+        uses: actions/cache@v4
+        with:
+          path: upx_cache
+          key: upx-${{ runner.os }}-${{ hashFiles('package-lock.json', 'package.json', 'build.js') }}
+          restore-keys: |
+            upx-${{ runner.os }}-
+
+      - name: Build zip
+        shell: pwsh
+        run: npm run build
+
+      - name: Prepare release files
+        id: prep
+        shell: pwsh
+        env:
+          TAG_INPUT: ${{ inputs.tag }}
+        run: |
+          $version = node -p "require('./package.json').version"
+
+          if ([string]::IsNullOrWhiteSpace($env:TAG_INPUT)) {
+            $tag = "v$version"
+          } else {
+            $tag = $env:TAG_INPUT.Trim()
+          }
+
+          $zip = Get-ChildItem -Path dist -Filter "BC-Server-Lite-win-x64-$version.zip" | Select-Object -First 1
+          if (-not $zip) {
+            $zip = Get-ChildItem -Path dist -Filter "*.zip" | Select-Object -First 1
+          }
+          if (-not $zip) {
+            throw "No zip file found in dist/"
+          }
+
+          $hash = (Get-FileHash -Path $zip.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          $shaPath = "$($zip.FullName).sha256"
+
+          "$hash  $($zip.Name)" | Set-Content -NoNewline -Encoding ascii $shaPath
+
+          $notes = @"
+          ## $tag
+
+          Built from commit $env:GITHUB_SHA.
+
+          SHA-256:
+
+          $hash  $($zip.Name)
+          "@
+
+          $notes | Set-Content -Encoding utf8 RELEASE_NOTES.md
+
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "title=BC Server Lite $tag" >> $env:GITHUB_OUTPUT
+          "zip=$($zip.FullName)" >> $env:GITHUB_OUTPUT
+          "sha=$shaPath" >> $env:GITHUB_OUTPUT
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-files
+          path: |
+            ${{ steps.prep.outputs.zip }}
+            ${{ steps.prep.outputs.sha }}
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.prep.outputs.tag }}
+          TITLE: ${{ steps.prep.outputs.title }}
+          ZIP: ${{ steps.prep.outputs.zip }}
+          SHA: ${{ steps.prep.outputs.sha }}
+          DRAFT: ${{ inputs.draft }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          $args = @(
+            "release", "create", $env:TAG,
+            $env:ZIP,
+            $env:SHA,
+            "--title", $env:TITLE,
+            "--notes-file", "RELEASE_NOTES.md",
+            "--target", $env:GITHUB_SHA
+          )
+
+          if ($env:DRAFT -eq "true") {
+            $args += "--draft"
+          }
+
+          if ($env:PRERELEASE -eq "true") {
+            $args += "--prerelease"
+          }
+
+          gh @args
